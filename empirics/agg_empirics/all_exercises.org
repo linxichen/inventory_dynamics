@@ -134,7 +134,7 @@ I summarize all the exercises I do to aggregate data, mostly from NIPA, to uncov
 #+END_SRC
 
 * Load in Data in Matlab
-  #+begin_src octave :exports results 
+  #+begin_src octave :session :exports results 
   filename = './data/quarterly_FRED.txt';
   delimiter = '|';
   formatSpec = '%s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%[^\n\r]';
