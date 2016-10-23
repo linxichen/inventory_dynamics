@@ -134,13 +134,19 @@ I summarize all the exercises I do to aggregate data, mostly from NIPA, to uncov
 #+END_SRC
 
 * Load in Data in Matlab
-  #+begin_src octave :session :exports results :results verbatim table
-  n = [1:10];
-  x = 5*n+4;
-  ans = x
-  A = importdata(fname, delimiter, header_rows)
+  #+begin_src octave :exports results 
+  filename = './data/quarterly_FRED.txt';
+  delimiter = '|';
+  formatSpec = '%s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%*s%[^\n\r]';
+  fileID = fopen(filename,'r');
+  dataArray = textscan(fileID, formatSpec, 'Delimiter', delimiter,  'ReturnOnError', false);
+  fclose(fileID);
+  date1 = dataArray{:, 1};
+
+  %% Clear temporary variables
+  clear filename delimiter formatSpec fileID dataArray ;
   #+end_src
 
   #+RESULTS:
-  | 9 | 14 | 19 | 24 | 29 | 34 | 39 | 44 | 49 | 54 |
 
+  
