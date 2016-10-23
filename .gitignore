@@ -1,0 +1,12 @@
+
+*.org#
+
+empirics/agg_empirics/.#all_exercises.org
+
+empirics/agg_empirics/all_exercises.pdf
+
+empirics/agg_empirics/all_exercises.tex
+
+empirics/agg_empirics/auto/all_exercises.el
+
+*.dta
