@@ -1,4 +1,6 @@
-quietly {
+/* change this */
+cd ~/GitHub/inventory_dynamics/empirics/agg_empirics/codes
+
 /* Housekeeping */
 clear all
 set matsize 5000
@@ -99,6 +101,5 @@ gen price_Sales = 100*nSales/rSales
 order date, first
 
 /* save rawly processed dataset */
-save quarterly_FRED, replace 
-export delimited using "quarterly_FRED.txt", delimiter("|") datafmt replace
-}
+save ../data/quarterly_FRED, replace 
+export delimited using "../data/quarterly_FRED.txt", delimiter("|") datafmt replace
