@@ -68,9 +68,22 @@ nbercycles pr_state2, file("crap2.do") replace
 drop pr_state*
 
 /* the joint outcome of inventory and sales */
-mswitch dr D.ln_rISratio, states(3)  difficult level(95)
+mswitch dr D.ln_rISratio, states(3) varswitch difficult level(95)
 predict pr_state*, pr smethod(smooth)
 nbercycles pr_state1, file("crap1.do") replace
 nbercycles pr_state2, file("crap2.do") replace
 nbercycles pr_state3, file("crap3.do") replace
 drop pr_state*
+
+/* peak at share_rCIPI */
+mswitch dr share_CIPI L.share_CIPI L2.share_CIPI, states(2)
+capture {
+  predict pr_share_state*, pr smethod(smooth)
+}
+if _rc != 0 {
+  drop pr_state*
+  predict pr_share_state*, pr smethod(smooth)
+}
+nbercycles pr_share_state1, file("crap1.do") replace
+nbercycles pr_share_state2, file("crap2.do") replace
+
