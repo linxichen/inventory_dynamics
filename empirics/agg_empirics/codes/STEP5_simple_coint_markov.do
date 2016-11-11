@@ -28,13 +28,12 @@ vec rGDP rCIPI, trend(constant) lags(4)
 kpss rCIPI, maxlag(4)
 
 /* now let's focus on inventory stock first */
-mswitch ar D.ln_rInventory, states(3) ar(1) vce(robust) difficult level(95)
+mswitch ar D.ln_rInventory, states(3) ar(1) difficult level(95)
 est sto m1
 predict pr_state*, pr smethod(smooth)
-nbercycles pr_state1, file("crap1.do") replace
-nbercycles pr_state2, file("crap2.do") replace
-nbercycles pr_state3, file("crap3.do") replace
-drop pr_state*
+nbercycles pr_inv_state1, file("crap1.do") replace
+nbercycles pr_inv_state2, file("crap2.do") replace
+nbercycles pr_inv_state3, file("crap3.do") replace
 
 mswitch ar D.ln_rInventory, states(2) ar(1) vce(robust) difficult
 est sto m2
@@ -48,17 +47,17 @@ est sto m3
 predict pr_state*, pr smethod(smooth)
 nbercycles pr_state1, file("crap1.do") replace
 nbercycles pr_state2, file("crap2.do") replace
+nbercycles pr_state3, file("crap3.do") replace
 drop pr_state*
 
-mswitch dr D.ln_rInventory, states(2) varswitch vce(robust) difficult
+mswitch dr D.ln_rInventory, states(3) vce(robust) difficult
 est sto m4
 predict pr_state*, pr smethod(smooth)
 nbercycles pr_state1, file("crap1.do") replace
 nbercycles pr_state2, file("crap2.do") replace
-drop pr_state*
+nbercycles pr_state3, file("crap3.do") replace
 
-esttab m1 m2 m3, onecell aic bic p
-esttab m1 m2 m3 using ../tables/stock_markov_zhou.tex, wide onecell aic bic p tex replace
+drop pr_state*
 
 /* now take a look at sales, do the regimes align? */
 mswitch ar D.ln_rSales, states(2) ar(1) difficult level(95)
@@ -68,7 +67,7 @@ nbercycles pr_state2, file("crap2.do") replace
 drop pr_state*
 
 /* the joint outcome of inventory and sales */
-mswitch dr D.ln_rISratio, states(3) varswitch difficult level(95)
+mswitch dr D.ln_rISratio, states(2) varswitch difficult level(95)
 predict pr_state*, pr smethod(smooth)
 nbercycles pr_state1, file("crap1.do") replace
 nbercycles pr_state2, file("crap2.do") replace
