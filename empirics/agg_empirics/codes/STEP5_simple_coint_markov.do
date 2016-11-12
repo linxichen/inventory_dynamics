@@ -30,12 +30,12 @@ kpss rCIPI, maxlag(4)
 /* now let's focus on inventory stock first */
 mswitch ar D.ln_rInventory, states(3) ar(1) difficult level(95)
 est sto m1
-predict pr_state*, pr smethod(smooth)
-nbercycles pr_inv_state1, file("crap1.do") replace
-nbercycles pr_inv_state2, file("crap2.do") replace
-nbercycles pr_inv_state3, file("crap3.do") replace
+predict pr_stock_state*, pr smethod(smooth)
+nbercycles pr_stock_state1, file("crap1.do") replace
+nbercycles pr_stock_state2, file("crap2.do") replace
+nbercycles pr_stock_state3, file("crap3.do") replace
 
-mswitch ar D.ln_rInventory, states(2) ar(1) vce(robust) difficult
+mswitch ar D.ln_rInventory, states(2) ar(1) varswitch vce(robust) difficult
 est sto m2
 predict pr_state*, pr smethod(smooth)
 nbercycles pr_state1, file("crap1.do") replace
