@@ -20,3 +20,7 @@ empirics/agg_empirics/codes/crap1.do
 empirics/agg_empirics/codes/crap2.do
 
 empirics/agg_empirics/codes/crap3.do
+
+*.irf
+
+*.mexmaci64
