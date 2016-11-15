@@ -51,7 +51,7 @@ load exp_to_TVPVAR
 % ydata = (ydata- repmat(mean(ydata,1),t2,1))./repmat(std(ydata,1),t2,1);
 
 %Y=ydata;
-Y = diff(data(:,2:4));
+Y = diff(data(:,1:4));
 yearlab = (1947.00:0.25:2016.25)';
 
 % Number of observations and dimension of X and Y
