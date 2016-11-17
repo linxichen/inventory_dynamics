@@ -51,7 +51,7 @@ load exp_to_TVPVAR
 % ydata = (ydata- repmat(mean(ydata,1),t2,1))./repmat(std(ydata,1),t2,1);
 
 %Y=ydata;
-Y = diff(data(:,1:4));
+Y = diff(data(:,[1 3 4]));
 yearlab = (1947.00:0.25:2016.25)';
 
 % Number of observations and dimension of X and Y
@@ -60,7 +60,7 @@ M=size(Y,2); % M is the dimensionality of Y
 
 % Number of factors & lags:
 tau = 40; % tau is the size of the training sample
-p = 2; % p is number of lags in the VAR part
+p = 3; % p is number of lags in the VAR part
 numa = M*(M-1)/2; % Number of lower triangular elements of A_t (other than 0's and 1's)
 % ===================================| VAR EQUATION |==============================
 % Generate lagged Y matrix. This will be part of the X matrix
@@ -390,5 +390,13 @@ disp('plot(1:nhor,squeeze(imp96XY(:,VAR,:))), for impulse responses at 1996:Q1')
 disp('             ')
 disp('where VAR=1 for impulses of inflation, VAR=2 for unemployment and VAR=3 for interest rate')
 
+figure
+whichvar = 1;
+subplot(3,1,1)
+plot(1:nhor,squeeze(imp75XY(:,whichvar,:))) % CIPI shock
+subplot(3,1,2)
+plot(1:nhor,squeeze(imp81XY(:,whichvar,:))) % CIPI shock
+subplot(3,1,3)
+plot(1:nhor,squeeze(imp96XY(:,whichvar,:))) % CIPI shock
 
 
