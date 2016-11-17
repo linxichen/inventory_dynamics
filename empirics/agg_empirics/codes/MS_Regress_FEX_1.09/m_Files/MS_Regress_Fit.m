@@ -393,8 +393,8 @@ switch advOpt.optimizer
     case 'fminsearch'
         options=optimset('fminsearch');
         options=optimset(options,'display','off');
-        options=optimset(options,'MaxIter',500*numel(param0));
-        options=optimset(options,'MaxFunEvals',500*numel(param0));
+        options=optimset(options,'MaxIter',1500*numel(param0));
+        options=optimset(options,'MaxFunEvals',1500*numel(param0));
         options=optimset(options,'UseParallel',true);
 
         [param]=fminsearch(@(param)MS_Regress_Lik(dep,indep_nS,indep_S,param,k,S,advOpt,dispOut),param0,options);

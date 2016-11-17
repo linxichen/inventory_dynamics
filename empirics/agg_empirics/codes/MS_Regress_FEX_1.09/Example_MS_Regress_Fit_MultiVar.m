@@ -5,9 +5,18 @@ clear;
 addpath('m_Files'); % add 'm_Files' folder to the search path
 addpath('data_Files');
 
-logRet=importdata('Example_Fex.txt');  % load some Data.
+% load data
+imported=importdata('./data_Files/trial1.txt');  % load some Data.
+data = imported.data;
+%data = 100*diff(data(:,2:3));
+start = 0;
+shift = 0;
+forward_resid_rCIPI = data(start+2+shift:end,2);
+forward_IS = data(start+1+shift:end,4);
+match_GDP = data(start+1:end-shift,3);
+data = 100*[forward_resid_rCIPI diff(match_GDP) diff(forward_IS)];
 
-dep=logRet(:,1:2);                  % Defining dependent variable from .mat file
+dep=data(:,1:2);                  % Defining dependent variable from .mat file
 constVec=ones(length(dep),1);       % Defining a constant vector in mean equation (just an example of how to do it)
 indep{1}=constVec;                  % Defining some explanatory variables
 indep{2}=constVec;                  % Defining some explanatory variables
