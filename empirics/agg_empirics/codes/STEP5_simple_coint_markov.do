@@ -22,6 +22,10 @@ kpss ln_rISratio, maxlag(4)
 vec ln_rInventory ln_rSalesGoods, trend(constant) lags(4)
 vecrank rInventory rSalesGoods, trend(constant) lags(4) levela
 
+/* see if ivnentory stock and GDP is coint */
+vec ln_rInventory L3.ln_rGDP, lags(4)
+vecrank ln_rInventory L3.ln_rGDP, lags(4) levela
+
 /* let's check out CIPI and GDP */
 vecrank rGDP rCIPI, trend(constant) lags(4) levela
 vec rGDP rCIPI, trend(constant) lags(4)

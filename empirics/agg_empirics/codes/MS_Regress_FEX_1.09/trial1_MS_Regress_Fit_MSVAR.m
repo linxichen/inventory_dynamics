@@ -23,8 +23,8 @@ monthnum = 12*(datelabel - yearnum)+2;
 date_serial = datenum(yearnum,monthnum,ones(size(yearnum)));
 
 dep=data;                  % Defining dependent variables in system
-nLag=3;                             % Number of lags in system
-k=2;                                % Number of States
+nLag=2;                             % Number of lags in system
+k=4;                                % Number of States
 doIntercept=1;                      % add intercept to equations?
 advOpt.distrib='Normal';            % The Distribution assumption (only 'Normal' for MS VAR models)
 advOpt.std_method=2;                % Defining the method for calculation of standard errors. See pdf file for more details
