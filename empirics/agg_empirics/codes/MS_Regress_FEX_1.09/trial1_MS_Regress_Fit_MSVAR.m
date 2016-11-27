@@ -60,16 +60,18 @@ B = [Spec_Out.Coeff.S_Param{1,1}(:,regime)'; ...
 	        Spec_Out.Coeff.S_Param{1,2}(:,regime)'; ...
 			Spec_Out.Coeff.S_Param{1,3}(:,regime)'; ...
 			];
-B0 = B(:,regime);
-B1 = B(:,2:end);
-Ymean = (eye(3) - B1)\B0;
+B0 = B(:,1);
+B1 = B(:,2:2+2);
+B2 = B(:,5:7);
+Ymean = (eye(3) - B1 - B2)\B0;
 L = chol(Spec_Out.Coeff.covMat{regime})';
 impulsevec(impulsevar,1) = 1;
-Yimpulse(:,1) = B0 + B1*Ymean + L*impulsevec(:,1);
-for i_period = 2:irfperiods
-	Yimpulse(:,i_period) = B0 + B1*Yimpulse(:,i_period-1) + L*impulsevec(:,i_period);
+Yimpulse(:,1) = B0 + B1*Ymean + B2*Ymean + L*impulsevec(:,1);
+Yimpulse(:,2) = B0 + B1*Yimpulse(:,1) + B2*Ymean + L*impulsevec(:,2);
+for i_period = 3:irfperiods
+	Yimpulse(:,i_period) = B0 + B1*Yimpulse(:,i_period-1) + B2*Yimpulse(:,i_period-2) + L*impulsevec(:,i_period);
 end
-Yirf_regime1 = Yimpulse - Ymean;
+Yirf_regime1 = Yimpulse - repmat(Ymean,1,irfperiods);
 
 regime = 2;
 % initialzation
@@ -80,16 +82,18 @@ B = [Spec_Out.Coeff.S_Param{1,1}(:,regime)'; ...
 	        Spec_Out.Coeff.S_Param{1,2}(:,regime)'; ...
 			Spec_Out.Coeff.S_Param{1,3}(:,regime)'; ...
 			];
-B0 = B(:,regime);
-B1 = B(:,2:end);
-Ymean = (eye(3) - B1)\B0;
+B0 = B(:,1);
+B1 = B(:,2:2+2);
+B2 = B(:,5:7);
+Ymean = (eye(3) - B1 - B2)\B0;
 L = chol(Spec_Out.Coeff.covMat{regime})';
 impulsevec(impulsevar,1) = 1;
-Yimpulse(:,1) = B0 + B1*Ymean + L*impulsevec(:,1);
-for i_period = 2:irfperiods
-	Yimpulse(:,i_period) = B0 + B1*Yimpulse(:,i_period-1) + L*impulsevec(:,i_period);
+Yimpulse(:,1) = B0 + B1*Ymean + B2*Ymean + L*impulsevec(:,1);
+Yimpulse(:,2) = B0 + B1*Yimpulse(:,1) + B2*Ymean + L*impulsevec(:,2);
+for i_period = 3:irfperiods
+	Yimpulse(:,i_period) = B0 + B1*Yimpulse(:,i_period-1) + B2*Yimpulse(:,i_period-2) + L*impulsevec(:,i_period);
 end
-Yirf_regime2 = Yimpulse - Ymean;
+Yirf_regime2 = Yimpulse - repmat(Ymean,1,irfperiods);
 
 figure 
 subplot(2,1,1)

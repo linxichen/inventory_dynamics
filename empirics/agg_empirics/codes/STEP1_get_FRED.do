@@ -38,6 +38,7 @@ local varlist `varlist' CQRMTSPL /* real sales of manufacturing and trade */
 local varlist `varlist' A373RD3Q086SBEA /*deflator nonfarm inventory */
 local varlist `varlist' LREM64TTUSQ156S /*employment rate 15-64*/
 local varlist `varlist' GDPDEF /* GDP deflator */
+local varlist `varlist' GDPPOT /* GDP deflator */
  
 /* download and rename */
 freduse `varlist'
