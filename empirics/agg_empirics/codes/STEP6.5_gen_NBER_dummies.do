@@ -22,4 +22,5 @@ gen simple_regimes = recession_dum + 1
 
 save "../data/quarterly_FRED.dta", replace
 
+export delimited using "../data/quarterly_FRED.txt", datafmt replace
 

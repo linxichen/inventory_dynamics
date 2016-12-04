@@ -7,7 +7,7 @@ clear;
 addpath('m_Files'); % add 'm_Files' folder to the search path
 addpath('data_Files'); % add 'm_Files' folder to the search path
 
-gnpVec=importdata('gnp_Hamilton.txt');    % load gnp Data
+gnpVec=importdata('GNP_Hamilton.txt');    % load gnp Data
 
 gnpGrowth=(gnpVec(2:end)-gnpVec(1:end-1))./gnpVec(1:end-1);
 

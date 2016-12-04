@@ -25,7 +25,7 @@ date_serial = datenum(yearnum,monthnum,ones(size(yearnum)));
 break_dummy = (datelabel >= 1984.00);
 
 % crated dependent vars and regressors
-lags = 3;                            % decide on lags
+lags = 2;                            % decide on lags
 Y = data;
 nvar = size(Y,2);
 YLAG = lagmatrix(Y,1:lags);
@@ -36,7 +36,7 @@ indep{2}=[constVec constVec.*break_dummy];                  % Defining some expl
 indep{3}=[constVec constVec.*break_dummy];                  % Defining some explanatory variables
 indep{4}=[constVec constVec.*break_dummy];                  % Defining some explanatory variables
 
-k=2;                                % Number of States
+k=9;                                % Number of States
 S{1}=[1 1 1];                        % Defining which parts of the equation will switch states (column 1 and variance only)
 S{2}=[1 1 1];                        % Defining which parts of the equation will switch states (column 1 and variance only)
 S{3}=[1 1 1];                        % Defining which parts of the equation will switch states (column 1 and variance only)
@@ -45,6 +45,8 @@ S{4}=[1 1 1];                        % Defining which parts of the equation will
 advOpt.distrib='Normal';            % The Distribution assumption ('Normal', 't' or 'GED')
 advOpt.std_method=1;                % Defining the method for calculation of standard errors. See pdf file for more details
 advOpt.diagCovMat=0;
+advOpt.useMex=1;
+
 
 [Spec_Out]=MS_Regress_Fit(dep,indep,k,S,advOpt); % Estimating the model
 save trial4.mat

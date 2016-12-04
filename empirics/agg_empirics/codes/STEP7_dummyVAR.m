@@ -4,12 +4,14 @@ clc;
 close all
 addpath(genpath('~/Dropbox/matlabtools/BVARtoolbox'))
 
-load sim_VAR
+load('../data/manual_select_dummy_FRED')
+y_table = [diff(ln_rSales) diff(ln_rGDP) share_rCIPI_potential(2:end,:)];
+regimes = regimes(2:end,:);
 
 %% specify the empirical model
-N = 2; p = 2; M = 2;
-model.N = 2;
-model.p = 2;
+N = 3; p = 3; M = max(regimes);
+model.N = N;
+model.p = p;
 model.K = model.N*model.p+1;
 model.T = length(regimes);
 
@@ -23,8 +25,10 @@ priors.pphi_cov = 1e5*eye(N*N*p);
 options.burnin = 2e4;
 options.R = 5e4;
 tic
-draws = dummyVAR_Gibbs(y',regimes,model,priors,options);
+draws = dummyVAR_Gibbs(y_table,regimes,model,priors,options);
 toc
+
+save dummyVAR_Gibbs
 %% look at result
 median(draws.Ssigma_array,4)
 mean(draws.pphi,3)

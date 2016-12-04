@@ -6,29 +6,26 @@ addpath('m_Files'); % add 'm_Files' folder to the search path
 addpath('data_Files');
 
 % load data
-% imported=importdata('./data_Files/trial1.txt');  % load some Data.
-% data = imported.data;
 load manual_select_dummy_FRED
 %data = 100*diff(data(:,2:3));
-start = 0;
-shift = 0;
-forward_resid_rCIPI = share_rCIPI_potential(start+2+shift:end,:);
-forward_IS = ln_rISratio(start+1+shift:end,:);
-match_sales = ln_rSales(start+1:end-shift,:);
-match_gdp= ln_rGDP(start+1:end-shift,:);
-
-data = 100*[ diff(match_sales) diff(match_gdp) forward_resid_rCIPI ];
+start = 0; % first start date
+shift = 0; % shift some of the variable forward or backward
+% forward_resid_rCIPI = data(start+2+shift:end,2);
+share_rCIPI_pot = share_rCIPI_potential;
+% forward_stock = data(start+1+shift:end,3);
+match_GDP = ln_rGDP;
+match_sales = ln_rSales;
+data = 100*[diff(match_sales) diff(match_GDP) share_rCIPI_pot(2:end)];
 
 % data label
 datelabel = (1949.25:0.25:2016.50)'; % because first differenced
 yearnum = floor(datelabel);
 monthnum = 12*(datelabel - yearnum)+2;
 date_serial = datenum(yearnum,monthnum,ones(size(yearnum)));
-
 break_dummy = (datelabel >= 1984.00);
 
 % crated dependent vars and regressors
-lags = 2;                            % decide on lags
+lags = 4;                            % decide on lags
 Y = data;
 nvar = size(Y,2);
 YLAG = lagmatrix(Y,1:lags);
@@ -38,23 +35,24 @@ safe_dum = break_dummy(lags+1:end,:);
 const_dum = constVec.*safe_dum;
 YLAG = YLAG(lags+1:end,:); % discard first p lags
 YLAG_dum = YLAG.*safe_dum;
-indep{1}=[constVec const_dum YLAG YLAG_dum];                  % Defining some explanatory variables
-indep{2}=[constVec const_dum YLAG YLAG_dum];                  % Defining some explanatory variables
-indep{3}=[constVec const_dum YLAG YLAG_dum];                  % Defining some explanatory variables
+indep{1}=[constVec const_dum YLAG];                  % Defining some explanatory variables
+indep{2}=[constVec const_dum YLAG];                  % Defining some explanatory variables
+indep{3}=[constVec const_dum YLAG];                  % Defining some explanatory variables
 
 k=2;                                % Number of States
-S{1}=ones(1,2*(1+lags*nvar)+1);                        % Defining which parts of the equation will switch states (column 1 and variance only)
-S{2}=ones(1,2*(1+lags*nvar)+1);                        % Defining which parts of the equation will switch states (column 1 and variance only)
-S{3}=ones(1,2*(1+lags*nvar)+1);                        % Defining which parts of the equation will switch states (column 1 and variance only)
+S{1}=ones(1,2+lags*nvar+1);S{1}(1,end)=0;        % Defining which parts of the equation will switch states (column 1 and variance only)
+S{2}=ones(1,2+lags*nvar+1);S{2}(1,end)=0;     % Defining which parts of the equation will switch states (column 1 and variance only)
+S{3}=ones(1,2+lags*nvar+1);S{3}(1,end)=0;      % Defining which parts of the equation will switch states (column 1 and variance only)
 
 advOpt.distrib='Normal';            % The Distribution assumption ('Normal', 't' or 'GED')
-advOpt.std_method=1;                % Defining the method for calculation of standard errors. See pdf file for more details
+advOpt.std_method=2;                % Defining the method for calculation of standard errors. See pdf file for more details
 advOpt.diagCovMat=0;
+advOpt.optimizer='fminunc';
 
 [Spec_Out]=MS_Regress_Fit(dep,indep,k,S,advOpt); % Estimating the model
 
-%% plot regimes
-safe_dates = date_serial(start+1:end-shift,:);
+%% plot regimes 2
+safe_dates = date_serial(start+1+lags:end-shift,:);
 figure
 plot(safe_dates,Spec_Out.smoothProb(:,2));
 h = gca;
@@ -64,6 +62,19 @@ ylabel('Smoothed States Probabilities');
 legend('Regime 1');
 axis tight
 recessband = recessionplot;
+
+%% plot regimes 3
+safe_dates = date_serial(start+1+lags:end-shift,:);
+figure
+plot(safe_dates,Spec_Out.smoothProb(:,3));
+h = gca;
+datetick('x','yyyy','keepticks')
+xlabel('Time');
+ylabel('Smoothed States Probabilities');
+legend('Regime 1');
+axis tight
+recessband = recessionplot;
+
 
 %% IRF
 regime = 1;
