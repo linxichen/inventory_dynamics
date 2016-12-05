@@ -11,12 +11,13 @@ load manual_select_dummy_FRED
 start = 0; % first start date
 shift = 0; % shift some of the variable forward or backward
 % forward_resid_rCIPI = data(start+2+shift:end,2);
-share_rCIPI_pot = share_rCIPI_potential;
+% share_rCIPI_pot = (rCIPI(2:end) - rCIPI(1:end-1))./GDPPOT(1:end-1);
+share_rCIPI_pot = share_rCIPI_potential(2:end);
 % forward_stock = data(start+1+shift:end,3);
 % match_GDP = ln_rGDP;
 match_GDP = (rGDP(2:end) - rGDP(1:end-1))./GDPPOT(1:end-1);
 match_sales = (rSalesGoods(2:end) - rSalesGoods(1:end-1))./GDPPOT(1:end-1);
-data = 100*[match_sales match_GDP share_rCIPI_pot(2:end)];
+data = 100*[match_sales match_GDP share_rCIPI_pot];
 
 % data label
 datelabel = (1949.25:0.25:2016.50)'; % because first differenced
@@ -154,56 +155,39 @@ recessband = recessionplot;
 
 
 %% IRF
-regime = 1;
-irfperiods = 20;
-impulsevar = 2;
+conditonal_mean_tur(1,1) = step1_Spec_Out.Coeff.S_Param{1}(1,2);
+conditonal_mean_tur(2,1) = step1_Spec_Out.Coeff.S_Param{2}(1,2);
+conditonal_mean_tur(3,1) = step1_Spec_Out.Coeff.S_Param{3}(1,2);
 
-% initialzation
-impulsevec = zeros(3,irfperiods);
-Yimpulse = zeros(3,irfperiods);
+conditonal_mean_qui(1,1) = step1_Spec_Out.Coeff.S_Param{1}(1,1);
+conditonal_mean_qui(2,1) = step1_Spec_Out.Coeff.S_Param{2}(1,1);
+conditonal_mean_qui(3,1) = step1_Spec_Out.Coeff.S_Param{3}(1,1);
 
-B = [step1_Spec_Out.Coeff.S_Param{1,1}(:,regime)'; ...
-	        step1_Spec_Out.Coeff.S_Param{1,2}(:,regime)'; ...
-			step1_Spec_Out.Coeff.S_Param{1,3}(:,regime)'; ...
-			];
-B0 = B(:,1);
-B1 = B(:,2:end);
-Ymean = (eye(3) - B1)\B0;
-L = chol(step1_Spec_Out.Coeff.covMat{regime})';
-impulsevec(impulsevar,1) = 1;
-Yimpulse(:,1) = B0 + B1*Ymean + L*impulsevec(:,1);
-for i_period = 2:irfperiods
-	Yimpulse(:,i_period) = B0 + B1*Yimpulse(:,i_period-1) + L*impulsevec(:,i_period-1);
-end
-Yirf_regime1 = Yimpulse - Ymean;
 
-regime = 2;
-% initialzation
-impulsevec = zeros(3,irfperiods);
-Yimpulse = zeros(3,irfperiods);
+turbulent = OIRF_RFVAR(1,4*40,pphi_rec,step2_Spec_Out.Coeff.covMat{2},nvar,lags);
+turbulent = turbulent + repmat(conditonal_mean_tur,1,size(turbulent,2));
+quite = OIRF_RFVAR(1,4*40,pphi_exp,step2_Spec_Out.Coeff.covMat{2},nvar,lags);
+quite = quite + repmat(conditonal_mean_qui,1,size(quite,2));
 
-B = [step1_Spec_Out.Coeff.S_Param{1,1}(:,regime)'; ...
-	        step1_Spec_Out.Coeff.S_Param{1,2}(:,regime)'; ...
-			step1_Spec_Out.Coeff.S_Param{1,3}(:,regime)'; ...
-			];
-B0 = B(:,1);
-B1 = B(:,2:end);
-Ymean = (eye(3) - B1)\B0;
-L = chol(step1_Spec_Out.Coeff.covMat{regime})';
-impulsevec(impulsevar,1) = 1;
-Yimpulse(:,1) = B0 + B1*Ymean + L*impulsevec(:,1);
-for i_period = 2:irfperiods
-	Yimpulse(:,i_period) = B0 + B1*Yimpulse(:,i_period-1) + L*impulsevec(:,i_period-1);
-end
-Yirf_regime2 = Yimpulse - Ymean;
+turbulent_cumsum = cumsum(turbulent,2);
+quite_cumsum = cumsum(quite,2);
 
-figure 
-subplot(2,1,1)
-plot(Yirf_regime1')
-legend('resid_CIPI','GDP','ISratio')
-subplot(2,1,2)
-plot(Yirf_regime2')
-legend('resid_CIPI','GDP','ISratio')
+quite_cumsum(2,6)
+quite(3,6)-quite(3,1)
+
+turbulent_cumsum(2,6)
+turbulent(3,6)-turbulent(3,1)
+
+figure
+subplot(1,2,1)
+plot(quite')
+ylim([-3 30])
+
+subplot(1,2,2)
+plot(turbulent')
+ylim([-3 30])
+
+
 
 rmpath('m_Files');
 rmpath('data_Files'); 
