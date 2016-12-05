@@ -1,6 +1,11 @@
 % Example Script MS_Regress_Fit.m
 
 clear;
+close all;
+clc;
+
+diary('deliverable_1_7.txt')
+diary on
 
 addpath('m_Files'); % add 'm_Files' folder to the search path
 addpath('data_Files');
@@ -15,8 +20,8 @@ shift = 0; % shift some of the variable forward or backward
 share_rCIPI_pot = share_rCIPI_potential(2:end);
 % forward_stock = data(start+1+shift:end,3);
 % match_GDP = ln_rGDP;
-match_GDP = (rGDP(2:end) - rGDP(1:end-1))./GDPPOT(1:end-1);
-match_sales = (rSalesGoods(2:end) - rSalesGoods(1:end-1))./GDPPOT(1:end-1);
+match_GDP = (rGDP(2:end) - rGDP(1:end-1))./rGDP(1:end-1);
+match_sales = (rSalesGoods(2:end) - rSalesGoods(1:end-1))./rSalesGoods(1:end-1);
 data = 100*[match_sales match_GDP share_rCIPI_pot];
 
 % data label
@@ -43,8 +48,8 @@ indep{3}=[constVec const_dum YLAG ];                  % Defining some explanator
 
 k=2;                                % Number of States
 S{1}=ones(1,2+lags*nvar+1);S{1}(1,end)=0;        % Defining which parts of the equation will switch states (column 1 and variance only)
-S{2}=ones(1,2+lags*nvar+1);S{2}(1,end)=0;     % Defining which parts of the equation will switch states (column 1 and variance only)
-S{3}=ones(1,2+lags*nvar+1);S{3}(1,end)=0;      % Defining which parts of the equation will switch states (column 1 and variance only)
+S{2}=ones(1,2+lags*nvar+1);S{2}(1,end)=0;    % Defining which parts of the equation will switch states (column 1 and variance only)
+S{3}=ones(1,2+lags*nvar+1);S{3}(1,end)=0;     % Defining which parts of the equation will switch states (column 1 and variance only)
 
 advOpt.distrib='Normal';            % The Distribution assumption ('Normal', 't' or 'GED')
 advOpt.std_method=2;                % Defining the method for calculation of standard errors. See pdf file for more details
@@ -54,7 +59,7 @@ advOpt.optimizer='fminsearch';
 
 
 [step1_Spec_Out]=MS_Regress_Fit(dep,indep,k,S,advOpt); % Estimating the model
-save deliverable1_5.mat
+save deliverable1_7.mat
 
 %% plot regimes 2
 safe_dates = date_serial(start+1+lags:end-shift,:);
@@ -71,7 +76,7 @@ recessband = recessionplot;
 %% collect residual as z
 rec_flag = step1_Spec_Out.smoothProb(:,2) > 0.7;
 z = step1_Spec_Out.resid;
-lags = 2;
+lags = 3;
 zlag = lagmatrix(z,1:lags);
 zlag_safe = zlag(lags+1:end,:);
 z_safe = z(lags+1:end,:);
@@ -126,36 +131,52 @@ for i_var = 1:nvar
 	step2_Spec_Out.advOpt.constCoeff.nS_Param{i_var} = {0};
 end
 [step2_Spec_Out]=MS_Regress_Fit(dep,indep,k,S,step2_Spec_Out.advOpt); % Estimating the model
-save deliverable1_5.mat
+save deliverable1_7.mat
 
 %% plot regimes
-safe_dates = date_serial(start+1+lags:end-shift,:);
-figure
-plot(safe_dates,step1_Spec_Out.smoothProb(lags+1:end,2));
-h = gca;
-datetick('x','yyyy','keepticks')
-xlabel('Time');
-ylabel('Smoothed States Probabilities');
-legend('Recession Regimes');
-title('Autoregressive Regime')
-axis tight
-recessband = recessionplot;
+% Plotting
+% Defaults for this section
+width = 4;     % Width in inches
+height = 2;    % Height in inches
+alw = 1.2;    % AxesLineWidth
+fsz = 13;      % Fontsize
+lw = 1.5;      % LineWidth
+msz = 8;       % MarkerSize
 
 safe_dates = date_serial(start+1+lags:end-shift,:);
-figure
-plot(safe_dates,step2_Spec_Out.smoothProb(:,2));
+figure('Units','inches',...
+	'PaperPositionMode','auto');
+plot(safe_dates,step1_Spec_Out.smoothProb(lags+1:end,2),...
+	'LineWidth',lw,'MarkerSize',msz);
+% set (gcf, 'Units', 'normalized', 'Position', [0,0,1,1]);
 h = gca;
 datetick('x','yyyy','keepticks')
 xlabel('Time');
 ylabel('Probability');
-legend('Moderation');
-title('Smoothed States Probabilities , Moderation Covariance Regime')
+title('Autoregressive Regime, Smoothed')
 axis tight
-recessband = recessionplot;
+recessband1 = recessionplot;
+% legend('Probability');
+print('../../figures/AR_regime','-depsc2','-r300');
 
+
+safe_dates = date_serial(start+1+lags:end-shift,:);
+figure
+plot(safe_dates,step2_Spec_Out.smoothProb(:,2),...
+	'LineWidth',lw,'MarkerSize',msz);
+% set (gcf, 'Units', 'normalized', 'Position', [0,0,1,1]);
+h = gca;
+datetick('x','yyyy','keepticks')
+xlabel('Time');
+ylabel('Probability');
+% legend('Probability');
+title('High Volatility Regime, Smoothed')
+axis tight
+recessband2 = recessionplot;
+print('../../figures/COV_regime','-depsc2','-r300');
 
 %% IRF
-irf_periods = 20;
+irf_periods = 24;
 conditonal_mean_tur(1,1) = step1_Spec_Out.Coeff.S_Param{1}(1,2);
 conditonal_mean_tur(2,1) = step1_Spec_Out.Coeff.S_Param{2}(1,2);
 conditonal_mean_tur(3,1) = step1_Spec_Out.Coeff.S_Param{3}(1,2);
@@ -182,14 +203,26 @@ turbulent(3,6)-turbulent(3,1)
 figure
 subplot(1,2,1)
 plot(quite')
-ylim([-3 20])
+ylim([-0.2 1.2])
 
 subplot(1,2,2)
 plot(turbulent')
-ylim([-3 20])
+ylim([-0.2 1.2])
+
+figure
+subplot(1,2,1)
+plot(quite(3,:)')
+ylim([-0.05 0.15])
+subplot(1,2,2)
+plot(turbulent(3,:)')
+ylim([-0.05 0.15])
+
+%% Discrete simulation
 
 
 
+%%
 rmpath('m_Files');
-rmpath('data_Files'); 
+rmpath('data_Files');
+diary off
 
