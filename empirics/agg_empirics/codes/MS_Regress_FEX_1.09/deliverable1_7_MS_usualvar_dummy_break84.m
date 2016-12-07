@@ -9,6 +9,7 @@ diary on
 
 addpath('m_Files'); % add 'm_Files' folder to the search path
 addpath('data_Files');
+addpath(genpath('~/dropbox/matlabtools/BVARtoolbox'));
 
 % load data
 load manual_select_dummy_FRED
@@ -76,7 +77,7 @@ recessband = recessionplot;
 %% collect residual as z
 rec_flag = step1_Spec_Out.smoothProb(:,2) > 0.7;
 z = step1_Spec_Out.resid;
-lags = 4;
+lags = 2;
 zlag = lagmatrix(z,1:lags);
 zlag_safe = zlag(lags+1:end,:);
 z_safe = z(lags+1:end,:);
@@ -175,47 +176,16 @@ axis tight
 recessband2 = recessionplot;
 print('../../figures/COV_regime','-depsc2','-r300');
 
-%% IRF
-irf_periods = 24;
-conditonal_mean_tur(1,1) = step1_Spec_Out.Coeff.S_Param{1}(1,2);
-conditonal_mean_tur(2,1) = step1_Spec_Out.Coeff.S_Param{2}(1,2);
-conditonal_mean_tur(3,1) = step1_Spec_Out.Coeff.S_Param{3}(1,2);
+%% conditonal variance
+low_vola = step2_Spec_Out.Coeff.covMat{1};
+high_vola = step2_Spec_Out.Coeff.covMat{2};
+rec_high_sim = simulate_RFVAR(1e5,pphi_rec,high_vola,nvar,lags);
+exp_low_sim = simulate_RFVAR(1e5,pphi_exp,low_vola,nvar,lags);
+rec_high_corr = corr(rec_high_sim');
+exp_low_corr = corr(exp_low_sim');
+rec_high_cov = cov(rec_high_sim');
+exp_low_cov = cov(exp_low_sim');
 
-conditonal_mean_qui(1,1) = step1_Spec_Out.Coeff.S_Param{1}(1,1);
-conditonal_mean_qui(2,1) = step1_Spec_Out.Coeff.S_Param{2}(1,1);
-conditonal_mean_qui(3,1) = step1_Spec_Out.Coeff.S_Param{3}(1,1);
-
-
-turbulent = OIRF_RFVAR(1,irf_periods,pphi_rec,step2_Spec_Out.Coeff.covMat{2},nvar,lags);
-% turbulent = turbulent + repmat(conditonal_mean_tur,1,size(turbulent,2));
-quite = OIRF_RFVAR(1,irf_periods,pphi_exp,step2_Spec_Out.Coeff.covMat{2},nvar,lags);
-% quite = quite + repmat(conditonal_mean_qui,1,size(quite,2));
-
-turbulent_cumsum = cumsum(turbulent,2);
-quite_cumsum = cumsum(quite,2);
-
-quite_cumsum(2,6)
-quite(3,6)-quite(3,1)
-
-turbulent_cumsum(2,6)
-turbulent(3,6)-turbulent(3,1)
-
-figure
-subplot(1,2,1)
-plot(quite')
-ylim([-0.2 1.2])
-
-subplot(1,2,2)
-plot(turbulent')
-ylim([-0.2 1.2])
-
-figure
-subplot(1,2,1)
-plot(quite(3,:)')
-ylim([-0.05 0.15])
-subplot(1,2,2)
-plot(turbulent(3,:)')
-ylim([-0.05 0.15])
 
 %% Discrete simulation for 1981 recession
 Pphi_exp = reshape(pphi_exp,nvar,nvar,lags);
@@ -236,17 +206,19 @@ for i_lag = 1:lags
 end
 ysim_demean(:,1) =  Pphi_rec(:,:,1)*ylags_demean(:,1) ...
 	+ Pphi_rec(:,:,2)*ylags_demean(:,2) ...
-	+ Pphi_rec(:,:,3)*ylags_demean(:,3) ...
-	+ Pphi_rec(:,:,4)*ylags_demean(:,4);
+	%+ Pphi_rec(:,:,3)*ylags_demean(:,3) ...
+	%+ Pphi_rec(:,:,4)*ylags_demean(:,4) ...
+	;
 for date = 2:troughdate-peakdate
-	ylags_demean(:,4) = ylags_demean(:,3);
-	ylags_demean(:,3) = ylags_demean(:,2);
+	%ylags_demean(:,4) = ylags_demean(:,3);
+	%ylags_demean(:,3) = ylags_demean(:,2);
 	ylags_demean(:,2) = ylags_demean(:,1);
 	ylags_demean(:,1) = ysim_demean(:,date-1); 
 	ysim_demean(:,date) = Pphi_rec(:,:,1)*ylags_demean(:,1) ...
 	+ Pphi_rec(:,:,2)*ylags_demean(:,2) ...
-	+ Pphi_rec(:,:,3)*ylags_demean(:,3) ...
-	+ Pphi_rec(:,:,4)*ylags_demean(:,4);
+	%+ Pphi_rec(:,:,3)*ylags_demean(:,3) ...
+	%+ Pphi_rec(:,:,4)*ylags_demean(:,4) ...
+	;
 end
 ysim = ysim_demean + repmat(rec_mean,1,troughdate-peakdate);
 
@@ -303,6 +275,369 @@ title('CIPI Level')
 legend('Data','Discrete Shock')
 print('../../figures/discrete_level','-depsc2','-r300');
 
+% compute share
+gdp_change = sim_level(2,end)-sim_level(2,1);
+cipi_change = sim_level(3,end)-sim_level(3,1);
+disp(cipi_change/gdp_change)
+
+%% Discrete simulation for 1981 recession
+Pphi_exp = reshape(pphi_exp,nvar,nvar,lags);
+Pphi_rec = reshape(pphi_rec,nvar,nvar,lags);
+peakdate = 135; % 1981:III
+troughdate = 166; % 1982:IV
+ylags_demean = zeros(nvar,lags);
+ysim_demean = zeros(nvar,troughdate-peakdate);
+exp_mean(1,1) = step1_Spec_Out.Coeff.S_Param{1,1}(1,1)+step1_Spec_Out.Coeff.S_Param{1,1}(1,2);
+rec_mean(1,1) = step1_Spec_Out.Coeff.S_Param{1,1}(2,1)+step1_Spec_Out.Coeff.S_Param{1,1}(2,2);
+exp_mean(2,1) = step1_Spec_Out.Coeff.S_Param{1,2}(1,1)+step1_Spec_Out.Coeff.S_Param{1,2}(1,2);
+rec_mean(2,1) = step1_Spec_Out.Coeff.S_Param{1,2}(2,1)+step1_Spec_Out.Coeff.S_Param{1,2}(2,2);
+exp_mean(3,1) = step1_Spec_Out.Coeff.S_Param{1,3}(1,1)+step1_Spec_Out.Coeff.S_Param{1,3}(1,2);
+rec_mean(3,1) = step1_Spec_Out.Coeff.S_Param{1,3}(2,1)+step1_Spec_Out.Coeff.S_Param{1,3}(2,2);
+
+for i_lag = 1:lags
+	ylags_demean(:,i_lag) = data(peakdate-i_lag+1,:)'-rec_mean;
+end
+ysim_demean(:,1) =  Pphi_exp(:,:,1)*ylags_demean(:,1) ...
+	+ Pphi_exp(:,:,2)*ylags_demean(:,2) ...
+	%+ Pphi_rec(:,:,3)*ylags_demean(:,3) ...
+	%+ Pphi_rec(:,:,4)*ylags_demean(:,4) ...
+	;
+for date = 2:troughdate-peakdate
+	%ylags_demean(:,4) = ylags_demean(:,3);
+	%ylags_demean(:,3) = ylags_demean(:,2);
+	ylags_demean(:,2) = ylags_demean(:,1);
+	ylags_demean(:,1) = ysim_demean(:,date-1); 
+	ysim_demean(:,date) = Pphi_exp(:,:,1)*ylags_demean(:,1) ...
+	+ Pphi_exp(:,:,2)*ylags_demean(:,2) ...
+	%+ Pphi_rec(:,:,3)*ylags_demean(:,3) ...
+	%+ Pphi_rec(:,:,4)*ylags_demean(:,4) ...
+	;
+end
+ysim = ysim_demean + repmat(exp_mean,1,troughdate-peakdate);
+
+data_seq = [data(peakdate:troughdate,:)]';
+sim_seq = [data(peakdate,:)',ysim];
+
+figure
+subplot(3,1,1)
+plot(0:troughdate-peakdate,[data(peakdate:troughdate,1)'],...
+	0:troughdate-peakdate,[data(peakdate,1)' ysim(1,:)],'r--','LineWidth',lw,'MarkerSize',msz)
+title('Sales Growth')
+subplot(3,1,2)
+plot(0:troughdate-peakdate,[data(peakdate:troughdate,2)'],...
+	0:troughdate-peakdate,[data(peakdate,2)' ysim(2,:)],'r--','LineWidth',lw,'MarkerSize',msz)
+ylabel('Percent')
+title('GDP Growth')
+subplot(3,1,3)
+plot(0:troughdate-peakdate,[data(peakdate:troughdate,3)'],...
+	0:troughdate-peakdate,[data(peakdate,3)' ysim(3,:)],'r--','LineWidth',lw,'MarkerSize',msz)
+xlabel('Periods From Peak')
+title('CIPI/GDP^{Pot}')
+legend('Data','Discrete Shock')
+print('../../figures/discrete_demeaned_t2p','-depsc2','-r300');
+
+% revert to back to level
+data_level = [rSalesGoods(peakdate+1:troughdate+1) rGDP(peakdate+1:troughdate+1) rCIPI(peakdate+1:troughdate+1)]';
+sim_level = zeros(3,length(sim_seq));
+sim_level(:,1) = data_level(:,1);
+for date = 2:length(sim_seq)
+	sim_level(1:2,date) = (1+sim_seq(1:2,date)/100).*sim_level(1:2,date-1);
+	sim_level(3,date) = sim_seq(3,date)/100.*GDPPOT(peakdate+1+date-1);
+end
+
+figure
+subplot(3,1,1)
+plot(0:troughdate-peakdate,data_level(1,:),...
+	0:troughdate-peakdate,sim_level(1,:),'r--','LineWidth',lw,'MarkerSize',msz)
+xticks(0:troughdate-peakdate)
+title('Sales Level')
+
+subplot(3,1,2)
+plot(0:troughdate-peakdate,data_level(2,:),...
+	0:troughdate-peakdate,sim_level(2,:),'r--','LineWidth',lw,'MarkerSize',msz)
+xticks(0:troughdate-peakdate)
+ylabel('Billions of 2009 Dollar')
+title('GDP Level')
+
+subplot(3,1,3)
+plot(0:troughdate-peakdate,data_level(3,:),...
+	0:troughdate-peakdate,sim_level(3,:),'r--','LineWidth',lw,'MarkerSize',msz)
+xticks(0:troughdate-peakdate)
+xlabel('Periods From Peak')
+title('CIPI Level')
+%legend('Data','Discrete Shock')
+print('../../figures/discrete_level_t2p','-depsc2','-r300');
+
+% compute share
+gdp_change = sim_level(2,end)-sim_level(2,1);
+cipi_change = sim_level(3,end)-sim_level(3,1);
+disp(cipi_change/gdp_change)
+data_level(3,end)-data_level(3,1)
+
+%% OIRF for all, fixed at low volatility regime
+irf_periods = 10;
+sales_shock = 1;
+gdp_shock = 2;
+cipi_shock = 3;
+
+turbulent = zeros(nvar,nvar,irf_periods);
+quite = zeros(nvar,nvar,irf_periods);
+
+turbulent(:,sales_shock,:) = OIRF_RFVAR(sales_shock,irf_periods,pphi_rec,low_vola,nvar,lags);
+quite(:,sales_shock,:) = OIRF_RFVAR(sales_shock,irf_periods,pphi_exp,low_vola,nvar,lags);
+
+turbulent(:,gdp_shock,:) = OIRF_RFVAR(gdp_shock,irf_periods,pphi_rec,low_vola,nvar,lags);
+quite(:,gdp_shock,:) = OIRF_RFVAR(gdp_shock,irf_periods,pphi_exp,low_vola,nvar,lags);
+
+turbulent(:,cipi_shock,:) = OIRF_RFVAR(cipi_shock,irf_periods,pphi_rec,low_vola,nvar,lags);
+quite(:,cipi_shock,:) = OIRF_RFVAR(cipi_shock,irf_periods,pphi_exp,low_vola,nvar,lags);
+
+figure
+subplot(3,3,1)
+plot(0:irf_periods-1,squeeze(quite(1,1,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(1,1,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+title('Sales Shock')
+ylabel('Sales Response')
+
+subplot(3,3,2)
+plot(0:irf_periods-1,squeeze(quite(1,2,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(1,2,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+title('GDP Shock')
+
+subplot(3,3,3)
+plot(0:irf_periods-1,squeeze(quite(1,3,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(1,3,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+title('CIPI Shock')
+
+subplot(3,3,4)
+plot(0:irf_periods-1,squeeze(quite(2,1,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(2,1,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+ylabel('GDP Response')
+
+
+subplot(3,3,5)
+plot(0:irf_periods-1,squeeze(quite(2,2,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(2,2,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+
+subplot(3,3,6)
+plot(0:irf_periods-1,squeeze(quite(2,3,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(2,3,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+
+subplot(3,3,7)
+plot(0:irf_periods-1,squeeze(quite(3,1,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(3,1,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+ylabel('CIPI Response')
+
+subplot(3,3,8)
+plot(0:irf_periods-1,squeeze(quite(3,2,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(3,2,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+xlabel('Periods from Shock')
+
+subplot(3,3,9)
+plot(0:irf_periods-1,squeeze(quite(3,3,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(3,3,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+legend('Expansion','Recession')
+
+print('../../figures/9_OIRF_lowvola','-depsc2','-r300');
+
+%% OIRF for all, fixed at high volatility regime
+irf_periods = 10;
+sales_shock = 1;
+gdp_shock = 2;
+cipi_shock = 3;
+
+turbulent = zeros(nvar,nvar,irf_periods);
+quite = zeros(nvar,nvar,irf_periods);
+
+turbulent(:,sales_shock,:) = OIRF_RFVAR(sales_shock,irf_periods,pphi_rec,high_vola,nvar,lags);
+quite(:,sales_shock,:) = OIRF_RFVAR(sales_shock,irf_periods,pphi_exp,high_vola,nvar,lags);
+
+turbulent(:,gdp_shock,:) = OIRF_RFVAR(gdp_shock,irf_periods,pphi_rec,high_vola,nvar,lags);
+quite(:,gdp_shock,:) = OIRF_RFVAR(gdp_shock,irf_periods,pphi_exp,high_vola,nvar,lags);
+
+turbulent(:,cipi_shock,:) = OIRF_RFVAR(cipi_shock,irf_periods,pphi_rec,high_vola,nvar,lags);
+quite(:,cipi_shock,:) = OIRF_RFVAR(cipi_shock,irf_periods,pphi_exp,high_vola,nvar,lags);
+
+figure
+subplot(3,3,1)
+plot(0:irf_periods-1,squeeze(quite(1,1,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(1,1,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+title('Sales Shock')
+ylabel('Sales Response')
+
+subplot(3,3,2)
+plot(0:irf_periods-1,squeeze(quite(1,2,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(1,2,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+title('GDP Shock')
+
+subplot(3,3,3)
+plot(0:irf_periods-1,squeeze(quite(1,3,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(1,3,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+title('CIPI/POTGDP Shock')
+
+subplot(3,3,4)
+plot(0:irf_periods-1,squeeze(quite(2,1,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(2,1,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+ylabel('GDP Response')
+
+
+subplot(3,3,5)
+plot(0:irf_periods-1,squeeze(quite(2,2,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(2,2,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+
+subplot(3,3,6)
+plot(0:irf_periods-1,squeeze(quite(2,3,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(2,3,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+
+subplot(3,3,7)
+plot(0:irf_periods-1,squeeze(quite(3,1,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(3,1,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+ylabel('CIPI/POTGDP Response')
+
+subplot(3,3,8)
+plot(0:irf_periods-1,squeeze(quite(3,2,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(3,2,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+xlabel('Periods from Shock')
+
+subplot(3,3,9)
+plot(0:irf_periods-1,squeeze(quite(3,3,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(3,3,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+legend('Expansion','Recession')
+
+print('../../figures/9_OIRF_highvola','-depsc2','-r300');
+
+%% RF-IRF for all,
+irf_periods = 10;
+sales_shock = 1;
+gdp_shock = 2;
+cipi_shock = 3;
+
+turbulent = zeros(nvar,nvar,irf_periods);
+quite = zeros(nvar,nvar,irf_periods);
+
+turbulent(:,sales_shock,:) = OIRF_RFVAR(sales_shock,irf_periods,pphi_rec,eye(nvar),nvar,lags);
+quite(:,sales_shock,:) = OIRF_RFVAR(sales_shock,irf_periods,pphi_exp,eye(nvar),nvar,lags);
+
+turbulent(:,gdp_shock,:) = OIRF_RFVAR(gdp_shock,irf_periods,pphi_rec,eye(nvar),nvar,lags);
+quite(:,gdp_shock,:) = OIRF_RFVAR(gdp_shock,irf_periods,pphi_exp,eye(nvar),nvar,lags);
+
+turbulent(:,cipi_shock,:) = OIRF_RFVAR(cipi_shock,irf_periods,pphi_rec,eye(nvar),nvar,lags);
+quite(:,cipi_shock,:) = OIRF_RFVAR(cipi_shock,irf_periods,pphi_exp,eye(nvar),nvar,lags);
+
+figure
+subplot(3,3,1)
+plot(0:irf_periods-1,squeeze(quite(1,1,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(1,1,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+title('Sales Shock')
+ylabel('Sales Response')
+
+subplot(3,3,2)
+plot(0:irf_periods-1,squeeze(quite(1,2,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(1,2,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+title('GDP Shock')
+
+subplot(3,3,3)
+plot(0:irf_periods-1,squeeze(quite(1,3,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(1,3,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+title('CIPI/POTGDP Shock')
+
+subplot(3,3,4)
+plot(0:irf_periods-1,squeeze(quite(2,1,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(2,1,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+ylabel('GDP Response')
+
+
+subplot(3,3,5)
+plot(0:irf_periods-1,squeeze(quite(2,2,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(2,2,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+
+subplot(3,3,6)
+plot(0:irf_periods-1,squeeze(quite(2,3,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(2,3,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+
+subplot(3,3,7)
+plot(0:irf_periods-1,squeeze(quite(3,1,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(3,1,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+ylabel('CIPI/POTGDP Response')
+
+subplot(3,3,8)
+plot(0:irf_periods-1,squeeze(quite(3,2,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(3,2,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+xlabel('Periods from Shock')
+
+subplot(3,3,9)
+plot(0:irf_periods-1,squeeze(quite(3,3,:)),'b-',...
+	0:irf_periods-1,squeeze(turbulent(3,3,:)),'r-.',...
+	'LineWidth',lw,'MarkerSize',msz)
+legend('Expansion','Recession')
+
+print('../../figures/9_IRF_eye','-depsc2','-r300');
+
+%% OIRF for all, fixed at high volatility regime
+irf_periods = 10;
+sales_shock = 1;
+gdp_shock = 2;
+cipi_shock = 3;
+
+turbulent = zeros(nvar,nvar,irf_periods);
+quite = zeros(nvar,nvar,irf_periods);
+
+turbulent(:,sales_shock,:) = OIRF_RFVAR(sales_shock,irf_periods,pphi_rec,high_vola,nvar,lags);
+quite(:,sales_shock,:) = OIRF_RFVAR(sales_shock,irf_periods,pphi_exp,high_vola,nvar,lags);
+
+turbulent(:,gdp_shock,:) = OIRF_RFVAR(gdp_shock,irf_periods,pphi_rec,high_vola,nvar,lags);
+quite(:,gdp_shock,:) = OIRF_RFVAR(gdp_shock,irf_periods,pphi_exp,high_vola,nvar,lags);
+
+turbulent(:,cipi_shock,:) = OIRF_RFVAR(cipi_shock,irf_periods,pphi_rec,high_vola,nvar,lags);
+quite(:,cipi_shock,:) = OIRF_RFVAR(cipi_shock,irf_periods,pphi_exp,high_vola,nvar,lags);
+
+figure
+subplot(1,2,1)
+plot(0:irf_periods-1,-squeeze(quite(2,1,:)),'b-',...
+	0:irf_periods-1,-squeeze(quite(3,1,:)),'b-.',...
+	0:irf_periods-1,zeros(1,irf_periods),'k.-',...
+	'LineWidth',lw,'MarkerSize',msz)
+title('Expansion')
+legend('GDP','CIPI/POTGDP')
+ylabel('Percent')
+xlabel('Periods From Shock')
+
+subplot(1,2,2)
+plot(0:irf_periods-1,-squeeze(turbulent(2,1,:)),'r-',...
+	0:irf_periods-1,-squeeze(turbulent(3,1,:)),'r-.',...
+	0:irf_periods-1,zeros(1,irf_periods),'k.-',...
+	'LineWidth',lw,'MarkerSize',msz)
+legend('GDP','CIPI/POTGDP')
+xlabel('Periods From Shock')
+title('Recession')
+
+print('../../figures/focus_salesshock','-depsc2','-r300');
 
 %%
 rmpath('m_Files');
