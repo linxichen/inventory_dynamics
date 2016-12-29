@@ -33,7 +33,7 @@ date_serial = datenum(yearnum,monthnum,ones(size(yearnum)));
 break_dummy = (datelabel >= 1984.00);
 
 % crated dependent vars and regressors
-lags = 2;                            % decide on lags
+lags = 5;                            % decide on lags
 Y = data;
 nvar = size(Y,2);
 YLAG = lagmatrix(Y,1:lags);
@@ -53,10 +53,10 @@ S{2}=ones(1,2+lags*nvar+1);S{2}(1,end)=0;    % Defining which parts of the equat
 S{3}=ones(1,2+lags*nvar+1);S{3}(1,end)=0;     % Defining which parts of the equation will switch states (column 1 and variance only)
 
 advOpt.distrib='Normal';            % The Distribution assumption ('Normal', 't' or 'GED')
-advOpt.std_method=2;                % Defining the method for calculation of standard errors. See pdf file for more details
+advOpt.std_method=1;                % Defining the method for calculation of standard errors. See pdf file for more details
 advOpt.diagCovMat=1;
-advOpt.useMEX=1;
-advOpt.optimizer='fminsearch';
+advOpt.useMEX=0;
+advOpt.optimizer='fmincon';
 
 [step1_Spec_Out]=MS_Regress_Fit(dep,indep,k,S,advOpt); % Estimating the model
 save deliverable1_8.mat
@@ -101,7 +101,6 @@ X = kron(zlag_exp,eye(nvar));
 pphi_exp = (X'*X)\(X'*Y); 
 resid_exp_vec = Y-X*pphi_exp;
 resid_exp = reshape(resid_exp_vec,nvar,length(z_exp)); resid_exp = resid_exp';
-
 
 %% collect the second step residual as epsilon and regress again
 E = zeros(length(rec_flag_safe),nvar);
