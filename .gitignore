@@ -26,3 +26,5 @@ empirics/agg_empirics/codes/crap3.do
 *.mexmaci64
 
 empirics/agg_empirics/codes/MS_Regress_FEX_1.09/trial1.eps
+
+*.eps

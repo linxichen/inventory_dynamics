@@ -60,7 +60,7 @@ advOpt.optimizer='fminsearch';
 
 
 [step1_Spec_Out]=MS_Regress_Fit(dep,indep,k,S,advOpt); % Estimating the model
-save deliverable1_7.mat
+save deliverable1_9.mat
 
 %% plot regimes 2
 safe_dates = date_serial(start+1+lags:end-shift,:);
@@ -77,6 +77,37 @@ recessband = recessionplot;
 %% collect residual as z
 rec_flag = step1_Spec_Out.smoothProb(:,2) > 0.7;
 z = step1_Spec_Out.resid;
+
+% crated dependent vars and regressors
+lags = 4;                            % decide on lags
+Y = z;
+nvar = size(Y,2);
+YLAG = lagmatrix(Y,1:lags);
+dep=Y(lags+1:end,:);                  % Defining dependent variable from .mat file
+constVec=ones(length(dep),1);       % Defining a constant vector in mean equation (just an example of how to do it)
+safe_dum = break_dummy(lags+1:end,:);
+const_dum = constVec.*safe_dum;
+YLAG = YLAG(lags+1:end,:); % discard first p lags
+YLAG_dum = YLAG.*safe_dum;
+indep{1}=[YLAG ];                  % Defining some explanatory variables
+indep{2}=[YLAG ];                  % Defining some explanatory variables
+indep{3}=[YLAG ];                  % Defining some explanatory variables
+
+k=2;                                % Number of States
+S{1}=ones(1,lags*nvar+1);S{1}(1,end)=0;        % Defining which parts of the equation will switch states (column 1 and variance only)
+S{2}=ones(1,lags*nvar+1);S{2}(1,end)=0;    % Defining which parts of the equation will switch states (column 1 and variance only)
+S{3}=ones(1,lags*nvar+1);S{3}(1,end)=0;     % Defining which parts of the equation will switch states (column 1 and variance only)
+
+advOpt.distrib='Normal';            % The Distribution assumption ('Normal', 't' or 'GED')
+advOpt.std_method=1;                % Defining the method for calculation of standard errors. See pdf file for more details
+advOpt.diagCovMat=1;
+advOpt.useMEX=1;
+advOpt.optimizer='fminsearch';
+
+[step2_Spec_Out]=MS_Regress_Fit(dep,indep,k,S,advOpt); % Estimating the model
+
+
+
 lags = 4;
 zlag = lagmatrix(z,1:lags);
 zlag_safe = zlag(lags+1:end,:);
